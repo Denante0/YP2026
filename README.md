@@ -1,1 +1,1 @@
-# YP2026
+print ("Hello world")
