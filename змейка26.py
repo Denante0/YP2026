@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import messagebox
 import random
+import json
+import os
 
 class SnakeMazeGame:
     def __init__(self, root):
@@ -17,43 +19,81 @@ class SnakeMazeGame:
         self.apples = 0
         self.snake_color = "#2E8B57"
         
+        # Загрузка сохранённого рекорда
+        self.load_best_score()
+        
         self.create_maze()
         self.create_ui()
         self.reset_game()
         
-        # Привязываем клавиши через keycode (не зависит от раскладки)
         self.root.bind_all('<KeyPress>', self.on_key_press)
-        
-        # Запрещаем кнопкам перехватывать фокус
+       
         self.start_btn.bind('<Button-1>', self.on_button_click)
         self.restart_btn.bind('<Button-1>', self.on_button_click)
         
-        # Фокусируем окно
-        self.root.focus_set()
+        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         
+        self.root.focus_set()
+    
+    def load_best_score(self):
+        """Загрузка лучшего результата из файла snake_score.json"""
+        # Получаем путь к папке, где находится скрипт
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        self.save_file = os.path.join(script_dir, "snake_score.json")
+        
+        self.best_score = 0
+        
+        print(f"Загрузка рекорда из: {self.save_file}")  # Отладка
+        
+        if os.path.exists(self.save_file):
+            try:
+                with open(self.save_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    self.best_score = data.get('best_score', 0)
+                print(f"Рекорд загружен: {self.best_score}")
+            except Exception as e:
+                print(f"Ошибка загрузки: {e}")
+                self.best_score = 0
+        else:
+            print("Файл с рекордом не найден, будет создан новый")
+    
+    def save_best_score(self):
+        """Сохранение лучшего результата в файл snake_score.json"""
+        data = {
+            'best_score': self.best_score
+        }
+        try:
+            with open(self.save_file, 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+            print(f"Рекорд {self.best_score} сохранён в: {self.save_file}")
+        except Exception as e:
+            print(f"Ошибка сохранения: {e}")
+    
+    def update_best_score(self):
+        """Обновление лучшего результата"""
+        if self.score > self.best_score:
+            self.best_score = self.score
+            self.save_best_score()
+            return True
+        return False
+    
     def on_key_press(self, event):
-        """Обработчик нажатия клавиш по кодам клавиш (не зависит от раскладки)"""
+        """Обработчик нажатия клавиш"""
         if not self.game_active:
             return
         
-        # Коды клавиш (не зависят от раскладки)
-        # 87 - W, 119 - w
-        # 65 - A, 97 - a
-        # 83 - S, 115 - s
-        # 68 - D, 100 - d
         keycode = event.keycode
         
-        if keycode in [87, 119] and self.direction != 'Down':  # W
+        if keycode in [87, 119] and self.direction != 'Down':
             self.direction = 'Up'
-        elif keycode in [83, 115] and self.direction != 'Up':  # S
+        elif keycode in [83, 115] and self.direction != 'Up':
             self.direction = 'Down'
-        elif keycode in [65, 97] and self.direction != 'Right':  # A
+        elif keycode in [65, 97] and self.direction != 'Right':
             self.direction = 'Left'
-        elif keycode in [68, 100] and self.direction != 'Left':  # D
+        elif keycode in [68, 100] and self.direction != 'Left':
             self.direction = 'Right'
     
     def on_button_click(self, event):
-        """Возвращаем фокус на окно после нажатия кнопки"""
         self.root.focus_set()
         return True
     
@@ -101,7 +141,6 @@ class SnakeMazeGame:
                                 bg="lightgray", highlightthickness=2)
         self.canvas.pack(pady=10)
         
-        # Клик по канвасу возвращает фокус
         self.canvas.bind('<Button-1>', lambda e: self.root.focus_set())
     
     def reset_game(self):
@@ -143,7 +182,8 @@ class SnakeMazeGame:
         x, y = new
         if not (0 <= x < self.maze_w and 0 <= y < self.maze_h) or self.maze[y][x] == '1' or new in self.snake[:-1]:
             self.game_active = False
-            messagebox.showinfo("Конец игры", f"Вы проиграли!\nСчёт: {self.score}")
+            self.update_best_score()
+            messagebox.showinfo("Конец игры", f"Вы проиграли!\nСчёт: {self.score}\nРекорд: {self.best_score}")
             return
         
         self.snake.insert(0, new)
@@ -175,6 +215,10 @@ class SnakeMazeGame:
         
         fx, fy = self.food
         self.canvas.create_oval(fx*cs+4, fy*cs+4, (fx+1)*cs-4, (fy+1)*cs-4, fill="#F44336", outline="#D32F2F")
+    
+    def on_closing(self):
+        self.save_best_score()
+        self.root.destroy()
 
 if __name__ == "__main__":
     root = tk.Tk()
