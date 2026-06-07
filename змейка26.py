@@ -37,25 +37,19 @@ class SnakeMazeGame:
     
     def load_best_score(self):
         """Загрузка лучшего результата из файла snake_score.json"""
-        # Получаем путь к папке, где находится скрипт
         script_dir = os.path.dirname(os.path.abspath(__file__))
         self.save_file = os.path.join(script_dir, "snake_score.json")
         
         self.best_score = 0
-        
-        print(f"Загрузка рекорда из: {self.save_file}")  # Отладка
         
         if os.path.exists(self.save_file):
             try:
                 with open(self.save_file, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                     self.best_score = data.get('best_score', 0)
-                print(f"Рекорд загружен: {self.best_score}")
             except Exception as e:
                 print(f"Ошибка загрузки: {e}")
                 self.best_score = 0
-        else:
-            print("Файл с рекордом не найден, будет создан новый")
     
     def save_best_score(self):
         """Сохранение лучшего результата в файл snake_score.json"""
@@ -65,7 +59,6 @@ class SnakeMazeGame:
         try:
             with open(self.save_file, 'w', encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
-            print(f"Рекорд {self.best_score} сохранён в: {self.save_file}")
         except Exception as e:
             print(f"Ошибка сохранения: {e}")
     
@@ -126,6 +119,23 @@ class SnakeMazeGame:
         for obs in obstacles:
             for y,x in obs:
                 self.maze[y][x] = '1'
+        
+        # Исправляем дырки в стенах - проверяем все клетки и если клетка - стена по логике, но не помечена как стена
+        # Конкретная дырка, которую вы имеете в виду (например, в правой части лабиринта)
+        # Заделываем все изолированные клетки, которые окружены стенами со всех сторон
+        for y in range(1, self.maze_h-1):
+            for x in range(1, self.maze_w-1):
+                if self.maze[y][x] == '0':  # Если клетка проходимая
+                    # Проверяем, окружена ли она стенами со всех сторон
+                    walls_around = 0
+                    if self.maze[y-1][x] == '1': walls_around += 1
+                    if self.maze[y+1][x] == '1': walls_around += 1
+                    if self.maze[y][x-1] == '1': walls_around += 1
+                    if self.maze[y][x+1] == '1': walls_around += 1
+                    
+                    # Если окружена стенами с 3 или 4 сторон, это дыра - заделываем
+                    if walls_around >= 3:
+                        self.maze[y][x] = '1'
     
     def create_ui(self):
         btn_frame = tk.Frame(self.root)
