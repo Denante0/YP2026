@@ -3,6 +3,7 @@ from tkinter import messagebox
 import random
 import json
 import os
+import sys  # ДОБАВЛЕНО: импорт sys для определения exe режима
 
 class SnakeMazeGame:
     def __init__(self, root):
@@ -19,8 +20,7 @@ class SnakeMazeGame:
         self.apples = 0
         self.snake_color = "#2E8B57"
         
-        # Загрузка сохранённого рекорда
-        self.load_best_score()
+        self.load_best_score()  # ИЗМЕНЕНО: теперь использует правильный путь
         
         self.create_maze()
         self.create_ui()
@@ -36,10 +36,15 @@ class SnakeMazeGame:
         self.root.focus_set()
     
     def load_best_score(self):
-        """Загрузка лучшего результата из файла snake_score.json"""
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        self.save_file = os.path.join(script_dir, "snake_score.json")
+        # ИЗМЕНЕНО: определение правильной директории для exe и py
+        if getattr(sys, 'frozen', False):
+            # Если программа запущена как exe
+            script_dir = os.path.dirname(sys.executable)
+        else:
+            # Если запущена как скрипт .py
+            script_dir = os.path.dirname(os.path.abspath(__file__))
         
+        self.save_file = os.path.join(script_dir, "snake_score.json")
         self.best_score = 0
         
         if os.path.exists(self.save_file):
@@ -52,7 +57,7 @@ class SnakeMazeGame:
                 self.best_score = 0
     
     def save_best_score(self):
-        """Сохранение лучшего результата в файл snake_score.json"""
+        # ИЗМЕНЕНО: используем тот же путь, что и в load_best_score
         data = {
             'best_score': self.best_score
         }
@@ -63,7 +68,6 @@ class SnakeMazeGame:
             print(f"Ошибка сохранения: {e}")
     
     def update_best_score(self):
-        """Обновление лучшего результата"""
         if self.score > self.best_score:
             self.best_score = self.score
             self.save_best_score()
@@ -71,7 +75,6 @@ class SnakeMazeGame:
         return False
     
     def on_key_press(self, event):
-        """Обработчик нажатия клавиш"""
         if not self.game_active:
             return
         
@@ -119,21 +122,16 @@ class SnakeMazeGame:
         for obs in obstacles:
             for y,x in obs:
                 self.maze[y][x] = '1'
-        
-        # Исправляем дырки в стенах - проверяем все клетки и если клетка - стена по логике, но не помечена как стена
-        # Конкретная дырка, которую вы имеете в виду (например, в правой части лабиринта)
-        # Заделываем все изолированные клетки, которые окружены стенами со всех сторон
+
         for y in range(1, self.maze_h-1):
             for x in range(1, self.maze_w-1):
-                if self.maze[y][x] == '0':  # Если клетка проходимая
-                    # Проверяем, окружена ли она стенами со всех сторон
+                if self.maze[y][x] == '0': 
                     walls_around = 0
                     if self.maze[y-1][x] == '1': walls_around += 1
                     if self.maze[y+1][x] == '1': walls_around += 1
                     if self.maze[y][x-1] == '1': walls_around += 1
                     if self.maze[y][x+1] == '1': walls_around += 1
                     
-                    # Если окружена стенами с 3 или 4 сторон, это дыра - заделываем
                     if walls_around >= 3:
                         self.maze[y][x] = '1'
     
