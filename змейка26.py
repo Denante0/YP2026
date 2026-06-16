@@ -3,7 +3,7 @@ from tkinter import messagebox
 import random
 import json
 import os
-import sys  # ДОБАВЛЕНО: импорт sys для определения exe режима
+import sys  
 
 class SnakeMazeGame:
     def __init__(self, root):
@@ -20,13 +20,13 @@ class SnakeMazeGame:
         self.apples = 0
         self.snake_color = "#2E8B57"
         
-        self.load_best_score()  # ИЗМЕНЕНО: теперь использует правильный путь
-        
+        self.load_best_score()  
         self.create_maze()
         self.create_ui()
         self.reset_game()
         
-        self.root.bind_all('<KeyPress>', self.on_key_press)
+        self.root.bind_all('<Key>', self.on_key_press)
+        self.root.focus_set()
        
         self.start_btn.bind('<Button-1>', self.on_button_click)
         self.restart_btn.bind('<Button-1>', self.on_button_click)
@@ -36,12 +36,9 @@ class SnakeMazeGame:
         self.root.focus_set()
     
     def load_best_score(self):
-        # ИЗМЕНЕНО: определение правильной директории для exe и py
         if getattr(sys, 'frozen', False):
-            # Если программа запущена как exe
             script_dir = os.path.dirname(sys.executable)
         else:
-            # Если запущена как скрипт .py
             script_dir = os.path.dirname(os.path.abspath(__file__))
         
         self.save_file = os.path.join(script_dir, "snake_score.json")
@@ -57,7 +54,6 @@ class SnakeMazeGame:
                 self.best_score = 0
     
     def save_best_score(self):
-        # ИЗМЕНЕНО: используем тот же путь, что и в load_best_score
         data = {
             'best_score': self.best_score
         }
@@ -78,16 +74,39 @@ class SnakeMazeGame:
         if not self.game_active:
             return
         
-        keycode = event.keycode
+        key = event.keysym.lower()
+        char = event.char.lower() if event.char else ''
         
-        if keycode in [87, 119] and self.direction != 'Down':
-            self.direction = 'Up'
-        elif keycode in [83, 115] and self.direction != 'Up':
-            self.direction = 'Down'
-        elif keycode in [65, 97] and self.direction != 'Right':
-            self.direction = 'Left'
-        elif keycode in [68, 100] and self.direction != 'Left':
-            self.direction = 'Right'
+        new_direction = None
+        
+        if key == 'w':
+            new_direction = 'Up'
+        elif key == 's':
+            new_direction = 'Down'
+        elif key == 'a':
+            new_direction = 'Left'
+        elif key == 'd':
+            new_direction = 'Right'
+        
+        if char == 'ц':  # W = Ц
+            new_direction = 'Up'
+        elif char == 'ы':  # S = Ы
+            new_direction = 'Down'
+        elif char == 'ф':  # A = Ф
+            new_direction = 'Left'
+        elif char == 'в':  # D = В
+            new_direction = 'Right'
+        elif char == 'й':  
+            new_direction = 'Up'
+        elif char == 'я':  
+            new_direction = 'Down'
+        
+        if new_direction:
+            if (new_direction == 'Up' and self.direction != 'Down') or \
+               (new_direction == 'Down' and self.direction != 'Up') or \
+               (new_direction == 'Left' and self.direction != 'Right') or \
+               (new_direction == 'Right' and self.direction != 'Left'):
+                self.direction = new_direction
     
     def on_button_click(self, event):
         self.root.focus_set()
@@ -150,6 +169,10 @@ class SnakeMazeGame:
         self.canvas.pack(pady=10)
         
         self.canvas.bind('<Button-1>', lambda e: self.root.focus_set())
+        
+        hint = tk.Label(self.root, text="Управление: WASD (работает в русской и английской раскладке)", 
+                       font=("Arial", 9), fg="gray")
+        hint.pack(pady=5)
     
     def reset_game(self):
         self.snake = [self.random_free_cell()]
@@ -203,7 +226,7 @@ class SnakeMazeGame:
             self.snake.pop()
         
         self.draw_game()
-        speed = max(self.min_speed, self.base_speed - (self.apples // 3) * 10)
+        speed = max((self.min_speed), (self.base_speed - (self.apples // 3) * 10))
         self.root.after(speed, self.game_loop)
     
     def draw_game(self):
